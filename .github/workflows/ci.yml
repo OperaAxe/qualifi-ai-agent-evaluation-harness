@@ -1,0 +1,36 @@
+name: AI-agent evaluation harness
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+      - name: Run unit and harness tests
+        run: pytest
+      - name: Run deterministic evaluation and regression comparison
+        run: |
+          qa-eval run --json-out reports/evaluation.json --md-out reports/evaluation.md
+          qa-eval run --json-out reports/regression-evaluation.json --md-out reports/regression-evaluation.md --baseline baseline.json
+      - name: Upload evaluation reports
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: ai-evaluation-reports
+          path: reports/
+          if-no-files-found: warn

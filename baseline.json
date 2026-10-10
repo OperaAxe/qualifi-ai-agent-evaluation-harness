@@ -1,0 +1,7 @@
+{
+  "summary": {"total": 2, "passed": 2, "failed": 0},
+  "results": [
+    {"case": {"id": "create-note-basic"}, "grading": {"passed": true}},
+    {"case": {"id": "create-note-second"}, "grading": {"passed": true}}
+  ]
+}

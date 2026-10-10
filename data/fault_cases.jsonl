@@ -1,0 +1,4 @@
+{"id":"fault-wrong-tool","agent":"wrong_tool","input":{"title":"Release candidate checklist"},"expected_note_id":"note-1","max_steps":3}
+{"id":"fault-wrong-arguments","agent":"wrong_arguments","input":{"title":"Customer-impact smoke test"},"expected_note_id":"note-2","max_steps":3}
+{"id":"fault-false-claim","agent":"false_claim","input":{"title":"A state change that never happened"},"expected_note_id":"note-3","max_steps":3}
+{"id":"fault-loop","agent":"looping","input":{"title":"Stop looping"},"expected_note_id":"note-4","max_steps":3}

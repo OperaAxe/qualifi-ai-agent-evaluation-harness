@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "qualifi-ai-agent-evaluation-harness"
+version = "0.1.0"
+description = "A deterministic local harness for evaluating agent tool use, state integrity, authorization, recovery, and regressions."
+requires-python = ">=3.11"
+dependencies = ["pytest>=8.3,<9", "ruff>=0.11,<1"]
+
+[project.scripts]
+qa-eval = "harness.cli:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--strict-markers --junitxml=test-results/junit.xml"
+markers = ["evaluation: harness and grader behavior", "regression: baseline comparison behavior"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.setuptools.packages.find]
+include = ["harness*"]
