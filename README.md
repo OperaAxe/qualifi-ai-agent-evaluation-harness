@@ -1,25 +1,97 @@
 # QualiFi AI-Agent Evaluation Harness
 
-A **local, model-independent evaluation harness** for testing whether an agent selects tools correctly, supplies valid arguments, respects authorization, changes the intended state, recovers from failures, stays within a step budget, and regresses against a saved baseline.
+[![CI](https://github.com/OperaAxe/qualifi-ai-agent-evaluation-harness/actions/workflows/ci.yml/badge.svg)](https://github.com/OperaAxe/qualifi-ai-agent-evaluation-harness/actions/workflows/ci.yml)
 
-The default workflow uses a deterministic local reference agent. The faulty agents are test fixtures; they are not real model evaluations and their results must not be presented as benchmark scores.
+## The short version
 
-## Why it matters
+This project tests whether an AI agent actually completed a task, instead of trusting the words **“done”**.
 
-An agent saying “done” is not evidence that the task happened. This harness grades the environment after the run, checks the tool transcript, and compares current behavior with a baseline. It uses deterministic code-based graders by default, keeping the workflow free and reproducible.
+The agent is asked to create a note. I then check three things:
 
-## Setup
+1. **What did the agent try to do?**
+2. **What changed in the environment?**
+3. **Did the result match the task?**
 
-### Windows PowerShell
+The repository uses local deterministic agents, so it is free to run and makes no claim about the quality of a commercial model.
 
-```powershell
-py -3.13 -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
+## Start here: review one task like a QA tester
+
+You do not need an API key or Python installation to understand the evaluation. The examples and the latest CI result are already in the repository.
+
+### Step 1: Give the agent a clear task
+
+> Create a note titled “Release candidate checklist” with ID `note-1`.
+
+A good task has a clear input, a clear expected result, and a sensible step budget. Vague tasks produce vague metrics.
+
+### Step 2: Watch the agent’s action
+
+A good run chooses:
+
+```text
+create_note(title="Release candidate checklist", note_id="note-1")
 ```
 
-### Bash
+The test records the tool name and arguments. It does not require the agent to follow one perfect internal thought process; it checks whether the action was valid and useful.
+
+### Step 3: Inspect the state, not just the final sentence
+
+The agent may say “Created successfully.” That sentence is not evidence.
+
+The grader opens the local state and checks:
+
+```text
+note-1 exists
+note-1.title == "Release candidate checklist"
+protected note is unchanged
+```
+
+### Step 4: Try the failure cases
+
+The repository includes four intentionally faulty agents:
+
+- **Wrong tool:** tries to delete a protected note.
+- **Wrong arguments:** calls the right tool but omits the required title.
+- **False claim:** says it succeeded without changing anything.
+- **Looping:** keeps repeating a failed lookup until it exceeds the step budget.
+
+A good evaluation harness should catch each one for a different reason.
+
+### Step 5: Compare today with the baseline
+
+The clean reference cases pass. If a later change makes a previously passing case fail, the regression comparison reports it instead of hiding it inside one average score.
+
+## The test process
+
+```mermaid
+flowchart LR
+    A[Write a clear task] --> B[Run agent in clean state]
+    B --> C[Record tool calls]
+    C --> D[Inspect final state]
+    D --> E[Grade each dimension]
+    E --> F[Compare with baseline]
+    F --> G[Pass, explain failure, or block regression]
+```
+
+| QA question | What the harness checks |
+|---|---|
+| Did the agent choose a safe tool? | Tool selection and authorization |
+| Did it provide the required information? | Tool arguments |
+| Did the requested result actually appear? | Final-state verification |
+| Did it alter protected data? | State-integrity check |
+| Did it recover or keep looping? | Failure-recovery and step-budget checks |
+| Did an old success become a failure? | Baseline regression comparison |
+
+## What the report is meant to say
+
+The report is deliberately more useful than one score. It shows the case, the agent, the tool calls, the failed dimensions, and the metrics that were actually available.
+
+If token usage, provider cost, or real model latency was not measured, the report leaves it **unavailable**. It does not quietly write `0` and pretend that is data.
+
+## If you want to run it locally
+
+<details>
+<summary>Local setup and commands</summary>
 
 ```bash
 python3.13 -m venv .venv
@@ -28,46 +100,30 @@ python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 ```
 
-## CLI
-
-Run the clean regression suite:
+Run the clean reference evaluation:
 
 ```bash
 qa-eval run --json-out reports/evaluation.json --md-out reports/evaluation.md
 ```
 
-Compare it to the saved baseline:
-
-```bash
-qa-eval run --json-out reports/regression.json --md-out reports/regression.md --baseline baseline.json
-```
-
-Run the deliberately faulty fixtures. A non-zero exit code is expected because the graders should detect the failures:
+Run the deliberate failures. A non-zero exit is expected because detection is the point:
 
 ```bash
 qa-eval run --dataset data/fault_cases.jsonl --json-out reports/faults.json --md-out reports/faults.md
 ```
 
-The CLI writes JSON and Markdown reports. It returns non-zero when configured critical checks fail.
+</details>
 
-## Architecture
+## Where to look
 
-- `harness/models.py` — run and tool-call records
-- `harness/environment.py` — isolated local state and tool interface
-- `harness/agents.py` — adapter contract, deterministic reference agent, and faulty fixtures
-- `harness/grading.py` — independent code-based graders
-- `harness/runner.py` — isolated case execution and baseline comparison
-- `harness/cli.py` — command-line interface
-- `data/` — version-controlled regression and fault datasets
+- `docs/demo-script.md` — the human walkthrough
+- `docs/evaluation-methodology.md` — why the cases are isolated
+- `docs/grading-rules.md` — the exact pass/fail oracles
+- `data/cases.jsonl` — clean regression cases
+- `data/fault_cases.jsonl` — deliberate mistakes for grader validation
+- `harness/grading.py` — the independent checks
+- `harness/runner.py` — clean runs and baseline comparison
 
-Each case starts with a clean environment. Metrics that are not supplied by an adapter remain unavailable; local fixture duration is not model latency and no cost is invented.
+## Honest scope
 
-## Grading categories
-
-The harness checks task success, tool selection, tool arguments, authorization, state integrity, failure recovery, and execution budgets. The report exposes each case and failed dimension rather than hiding everything in one score.
-
-## Limitations
-
-This repository does not benchmark a real model, measure provider token usage, or establish production performance. The local tools and agents are deliberately small. A provider adapter would need to implement the same `AgentAdapter` contract and document actual runs before any model-specific claim could be made. Model-based or human graders may be added later for tasks where deterministic checks are insufficient.
-
-See `docs/evaluation-methodology.md`, `docs/grading-rules.md`, `docs/limitations.md`, `docs/learning-guide.md`, and `docs/demo-script.md`.
+This is not a benchmark score for GPT, Claude, Gemini, or any other commercial model. It does not connect to an external provider. The local agents are fixtures used to prove that the harness can detect useful and unsafe behavior. A real provider adapter would need its own documented credentials, cost controls, trial design, and evidence.
