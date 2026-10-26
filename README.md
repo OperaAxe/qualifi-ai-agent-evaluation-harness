@@ -19,13 +19,30 @@ The sample task asks an agent to create a note titled “Release candidate check
 
 ## Run locally
 
-Requires Python 3.13.
+Requires Python 3.11 or newer.
 
 ```bash
-python3.13 -m venv .venv
+python -m venv .venv
+```
+
+Activate the environment in Windows PowerShell:
+
+```powershell
+.venv\Scripts\Activate.ps1
+```
+
+On macOS or Linux:
+
+```bash
 source .venv/bin/activate
+```
+
+Install the project, create the output folders, and run the tests:
+
+```bash
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
+python -c "from pathlib import Path; Path('test-results').mkdir(exist_ok=True); Path('reports').mkdir(exist_ok=True)"
 pytest
 ```
 
