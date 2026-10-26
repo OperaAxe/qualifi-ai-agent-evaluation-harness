@@ -1,5 +1,7 @@
 # QualiFi AI-Agent Evaluation Harness
 
+> **Playbook status: in progress.** I'm building this as a practical playbook for checking what tool-using agents actually change, not just what they claim. The agents and data here are local fixtures; I'm still adding scenarios and tightening the grading rules.
+
 [![CI](https://github.com/OperaAxe/qualifi-ai-agent-evaluation-harness/actions/workflows/ci.yml/badge.svg)](https://github.com/OperaAxe/qualifi-ai-agent-evaluation-harness/actions/workflows/ci.yml)
 
 ## The short version
